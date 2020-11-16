@@ -14,7 +14,9 @@ class LogHandler:
 
     def data_handler(self, bpm, spo2):
         if bpm != self.last_bpm or spo2 != self.last_spo2:
-            print("BPM: {}, SpO2: {}".format(bpm, spo2))
+            print_bpm = '---' if bpm == 255 else str(bpm).rjust(3)
+            print_spo2 = '---' if spo2 == 127 else str(spo2).rjust(3)
+            print("BPM: {}, SpO2: {}".format(print_bpm, print_spo2))
             self.last_bpm, self.last_spo2 = bpm, spo2
 
 def make_handler(user_handler):
@@ -58,14 +60,14 @@ def main():
         address = args.device
 
     done = asyncio.Event()
+    lh = LogHandler()
+    task = loop.create_task(read_data(address, done, lh.data_handler))
     try:
-        lh = LogHandler()
-        loop.run_until_complete(read_data(address, done, lh.data_handler))
+        loop.run_until_complete(task)
     except KeyboardInterrupt:
         done.set()
 
-    for task in asyncio.Task.all_tasks():
-        loop.run_until_complete(task)
+    loop.run_until_complete(task)
 
 if __name__ == "__main__":
     main()
